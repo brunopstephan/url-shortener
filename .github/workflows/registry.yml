@@ -1,0 +1,23 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types:
+      - completed
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to DigitalOcean Container Registry
+      run: echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | docker login -u doctl --password-stdin registry.digitalocean.com
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t registry.digitalocean.com/bruno-do/url-shortener:latest .
+        docker push registry.digitalocean.com/bruno-do/url-shortener:latest
