@@ -13,7 +13,7 @@ type postBody struct {
 	URL string `json:"url"`
 }
 
-func handlePostShortenedURL(db repositories.UrlRepositoryInterface) http.HandlerFunc {
+func handlePostShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body postBody
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {

@@ -15,7 +15,7 @@ type getShortenedURLResponse struct {
 	URL string `json:"url"`
 }
 
-func handleGetShortenedURL(db repositories.UrlRepositoryInterface) http.HandlerFunc {
+func handleGetShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")
 		json := r.URL.Query().Get("json")

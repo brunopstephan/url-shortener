@@ -28,6 +28,11 @@ func (m *MockUrlRepository) GetURL(ctx context.Context, code string) (string, er
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockUrlRepository) GetAllURL(ctx context.Context) (map[string]string, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(map[string]string), args.Error(1)
+}
+
 func TestPostShortenedURL_ValidRequest(t *testing.T) {
 	validUrl := "https://example.com"
 	tt := struct {
@@ -50,7 +55,7 @@ func TestPostShortenedURL_ValidRequest(t *testing.T) {
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
 
-	req := httptest.NewRequest("POST", "/shorten", &requestBody)
+	req := httptest.NewRequest("POST", "/api/shorten", &requestBody)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -82,7 +87,7 @@ func TestPostShortenedURL_MissingParams(t *testing.T) {
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
 
-	req := httptest.NewRequest("POST", "/shorten", &requestBody)
+	req := httptest.NewRequest("POST", "/api/shorten", &requestBody)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -111,7 +116,7 @@ func TestPostShortenedURL_InvalidRequest(t *testing.T) {
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
 
-	req := httptest.NewRequest("POST", "/shorten", &requestBody)
+	req := httptest.NewRequest("POST", "/api/shorten", &requestBody)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -143,7 +148,7 @@ func TestPostShortenedURL_DatabaseError(t *testing.T) {
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
 
-	req := httptest.NewRequest("POST", "/shorten", &requestBody)
+	req := httptest.NewRequest("POST", "/api/shorten", &requestBody)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -174,7 +179,7 @@ func TestGetShortenedURL_ValidRequest(t *testing.T) {
 	mockStore.On("GetURL", context.Background(), "").Return(tt.mockSaveReturn, tt.mockSaveError)
 	handler := handleGetShortenedURL(mockStore)
 
-	req := httptest.NewRequest("GET", "/123?json=true", nil)
+	req := httptest.NewRequest("GET", "/api/123?json=true", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -202,7 +207,7 @@ func TestGetShortenedURL_UrlNotFound(t *testing.T) {
 	mockStore.On("GetURL", context.Background(), "").Return("", redis.Nil)
 	handler := handleGetShortenedURL(mockStore)
 
-	req := httptest.NewRequest("GET", "/123", nil)
+	req := httptest.NewRequest("GET", "/api/123", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -230,7 +235,67 @@ func TestGetShortenedURL_SomethingWentWrong(t *testing.T) {
 	mockStore.On("GetURL", context.Background(), "").Return("", assert.AnError)
 	handler := handleGetShortenedURL(mockStore)
 
-	req := httptest.NewRequest("GET", "/123", nil)
+	req := httptest.NewRequest("GET", "/api/123", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, tt.expectedCode, w.Code)
+
+	expectedBody, _ := json.Marshal(tt.expectedBody)
+
+	assert.JSONEq(t, string(expectedBody), w.Body.String())
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestGetAllURL_ValidRequest(t *testing.T) {
+	tt := struct {
+		mockSaveReturn map[string]string
+		mockSaveError  error
+		expectedCode   int
+		expectedBody   utils.ApiResponse
+	}{
+		mockSaveReturn: map[string]string{"123": "https://example.com"},
+		mockSaveError:  nil,
+		expectedCode:   http.StatusOK,
+		expectedBody: utils.ApiResponse{
+			Data: getAllUrlsResponse{URLs: map[string]string{"123": "https://example.com"}},
+		},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("GetAllURL", context.Background()).Return(tt.mockSaveReturn, tt.mockSaveError)
+	handler := handleGetAllUrls(mockStore)
+
+	req := httptest.NewRequest("GET", "/dashboard/all", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, tt.expectedCode, w.Code)
+
+	expectedBody, _ := json.Marshal(tt.expectedBody)
+
+	assert.JSONEq(t, string(expectedBody), w.Body.String())
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestGetAllURL_SomethingWentWrong(t *testing.T) {
+	tt := struct {
+		expectedCode int
+		expectedBody utils.ApiResponse
+	}{
+		expectedCode: http.StatusInternalServerError,
+		expectedBody: utils.ApiResponse{
+			Error: "something went wrong",
+		},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("GetAllURL", context.Background()).Return(map[string]string{}, assert.AnError)
+	handler := handleGetAllUrls(mockStore)
+
+	req := httptest.NewRequest("GET", "/dashboard/all", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)

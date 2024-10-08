@@ -13,12 +13,7 @@ type UrlRepository struct {
 	rdb *redis.Client
 }
 
-type UrlRepositoryInterface interface {
-	SaveShortenedURL(ctx context.Context, _url string) (string, error)
-	GetURL(ctx context.Context, code string) (string, error)
-}
-
-func NewUrlRepository(rdb *redis.Client) UrlRepositoryInterface {
+func NewUrlRepository(rdb *redis.Client) UrlContract {
 	return &UrlRepository{rdb: rdb}
 }
 
@@ -48,4 +43,13 @@ func (s *UrlRepository) GetURL(ctx context.Context, code string) (string, error)
 	}
 
 	return _url, nil
+}
+
+func (s *UrlRepository) GetAllURL(ctx context.Context) (map[string]string, error) {
+	urls, err := s.rdb.HGetAll(context.Background(), "encurtador").Result()
+	if err != nil {
+		return map[string]string{}, fmt.Errorf("failed to get all urls: %w", err)
+	}
+
+	return urls, nil
 }

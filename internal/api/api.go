@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewHandler(db repositories.UrlRepositoryInterface) http.Handler {
+func NewHandler(db repositories.UrlContract) http.Handler {
 	r := chi.NewMux()
 
 	r.Use(middleware.Recoverer)
@@ -18,7 +18,10 @@ func NewHandler(db repositories.UrlRepositoryInterface) http.Handler {
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/shorten", handlePostShortenedURL(db))
 		r.Get("/{code}", handleGetShortenedURL(db))
+	})
 
+	r.Route("/dashboard", func(r chi.Router) {
+		r.Get("/all", handleGetAllUrls(db))
 	})
 	return r
 }
