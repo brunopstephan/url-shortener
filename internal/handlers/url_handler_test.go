@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -50,7 +50,7 @@ func TestPostShortenedURL_ValidRequest(t *testing.T) {
 	}
 	mockStore := new(MockUrlRepository)
 	mockStore.On("SaveShortenedURL", mock.Anything, tt.body.URL).Return(tt.mockSaveReturn, tt.mockSaveError)
-	handler := handlePostShortenedURL(mockStore)
+	handler := HandlePostShortenedURL(mockStore)
 
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
@@ -82,7 +82,7 @@ func TestPostShortenedURL_MissingParams(t *testing.T) {
 	}
 
 	mockStore := new(MockUrlRepository)
-	handler := handlePostShortenedURL(mockStore)
+	handler := HandlePostShortenedURL(mockStore)
 
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
@@ -111,7 +111,7 @@ func TestPostShortenedURL_InvalidRequest(t *testing.T) {
 	}
 
 	mockStore := new(MockUrlRepository)
-	handler := handlePostShortenedURL(mockStore)
+	handler := HandlePostShortenedURL(mockStore)
 
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
@@ -143,7 +143,7 @@ func TestPostShortenedURL_DatabaseError(t *testing.T) {
 
 	mockStore := new(MockUrlRepository)
 	mockStore.On("SaveShortenedURL", mock.Anything, mock.Anything).Return("", assert.AnError)
-	handler := handlePostShortenedURL(mockStore)
+	handler := HandlePostShortenedURL(mockStore)
 
 	var requestBody bytes.Buffer
 	json.NewEncoder(&requestBody).Encode(tt.body)
@@ -177,7 +177,7 @@ func TestGetShortenedURL_ValidRequest(t *testing.T) {
 	}
 	mockStore := new(MockUrlRepository)
 	mockStore.On("GetURL", context.Background(), "").Return(tt.mockSaveReturn, tt.mockSaveError)
-	handler := handleGetShortenedURL(mockStore)
+	handler := HandleGetShortenedURL(mockStore)
 
 	req := httptest.NewRequest("GET", "/api/123?json=true", nil)
 	w := httptest.NewRecorder()
@@ -205,7 +205,7 @@ func TestGetShortenedURL_UrlNotFound(t *testing.T) {
 	}
 	mockStore := new(MockUrlRepository)
 	mockStore.On("GetURL", context.Background(), "").Return("", redis.Nil)
-	handler := handleGetShortenedURL(mockStore)
+	handler := HandleGetShortenedURL(mockStore)
 
 	req := httptest.NewRequest("GET", "/api/123", nil)
 	w := httptest.NewRecorder()
@@ -233,7 +233,7 @@ func TestGetShortenedURL_SomethingWentWrong(t *testing.T) {
 	}
 	mockStore := new(MockUrlRepository)
 	mockStore.On("GetURL", context.Background(), "").Return("", assert.AnError)
-	handler := handleGetShortenedURL(mockStore)
+	handler := HandleGetShortenedURL(mockStore)
 
 	req := httptest.NewRequest("GET", "/api/123", nil)
 	w := httptest.NewRecorder()
@@ -265,7 +265,7 @@ func TestGetAllURL_ValidRequest(t *testing.T) {
 	}
 	mockStore := new(MockUrlRepository)
 	mockStore.On("GetAllURL", context.Background()).Return(tt.mockSaveReturn, tt.mockSaveError)
-	handler := handleGetAllUrls(mockStore)
+	handler := HandleGetAllUrls(mockStore)
 
 	req := httptest.NewRequest("GET", "/dashboard/all", nil)
 	w := httptest.NewRecorder()
@@ -293,7 +293,7 @@ func TestGetAllURL_SomethingWentWrong(t *testing.T) {
 	}
 	mockStore := new(MockUrlRepository)
 	mockStore.On("GetAllURL", context.Background()).Return(map[string]string{}, assert.AnError)
-	handler := handleGetAllUrls(mockStore)
+	handler := HandleGetAllUrls(mockStore)
 
 	req := httptest.NewRequest("GET", "/dashboard/all", nil)
 	w := httptest.NewRecorder()

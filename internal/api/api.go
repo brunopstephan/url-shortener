@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"urlShortener/internal/handlers"
 	"urlShortener/internal/repositories"
 
 	"github.com/go-chi/chi/v5"
@@ -16,12 +17,18 @@ func NewHandler(db repositories.UrlContract) http.Handler {
 	r.Use(middleware.RequestID)
 
 	r.Route("/api", func(r chi.Router) {
-		r.Post("/shorten", handlePostShortenedURL(db))
-		r.Get("/{code}", handleGetShortenedURL(db))
+		r.Post("/shorten", handlers.HandlePostShortenedURL(db))
+		r.Get("/{code}", handlers.HandleGetShortenedURL(db))
 	})
 
-	r.Route("/dashboard", func(r chi.Router) {
-		r.Get("/all", handleGetAllUrls(db))
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.BasicAuth("Restricted", map[string]string{
+			"admin": "password",
+		}))
+
+		r.Route("/dashboard", func(r chi.Router) {
+			r.Get("/all", handlers.HandleGetAllUrls(db))
+		})
 	})
 	return r
 }
