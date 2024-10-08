@@ -174,7 +174,7 @@ func TestGetShortenedURL_ValidRequest(t *testing.T) {
 	mockStore.On("GetURL", context.Background(), "").Return(tt.mockSaveReturn, tt.mockSaveError)
 	handler := handleGetShortenedURL(mockStore)
 
-	req := httptest.NewRequest("GET", "/123", nil)
+	req := httptest.NewRequest("GET", "/123?json=true", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
