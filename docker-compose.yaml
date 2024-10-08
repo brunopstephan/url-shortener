@@ -2,16 +2,15 @@ services:
   app:
     build: 
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     restart: unless-stopped
     container_name: url_shortener
     depends_on:
       - redis
+    env_file:
+      - .env
     environment:
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=''
-      - REDIS_DB=0
     ports:
       - "9000:9000"
   redis:
