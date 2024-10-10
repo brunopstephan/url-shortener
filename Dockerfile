@@ -16,6 +16,8 @@ WORKDIR /app
 ENV REDIS_HOST=redis
 ENV REDIS_PORT=6379
 
+COPY --from=builder /app/.env ./
+
 COPY --from=builder /shortener /app/shortener
 EXPOSE 9000
 

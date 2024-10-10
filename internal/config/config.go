@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
@@ -28,8 +29,9 @@ func getConfig() config {
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisPwd := os.Getenv("REDIS_PASSWORD")
-	basicAuthUser := os.Getenv("BASIC_AUTH_USER")
+	basicAuthUser := os.Getenv("BASIC_AUTH_USERNAME")
 	basicAuthPwd := os.Getenv("BASIC_AUTH_PASSWORD")
+	fmt.Println(basicAuthUser, basicAuthPwd)
 	redisDb, err := strconv.Atoi(os.Getenv("REDIS_DB"))
 
 	if err != nil {
