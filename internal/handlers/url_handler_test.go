@@ -33,6 +33,11 @@ func (m *MockUrlRepository) GetAllURL(ctx context.Context) (map[string]string, e
 	return args.Get(0).(map[string]string), args.Error(1)
 }
 
+func (m *MockUrlRepository) DeleteURL(ctx context.Context, code string) error {
+	args := m.Called(ctx, code)
+	return args.Error(0)
+}
+
 func TestPostShortenedURL_ValidRequest(t *testing.T) {
 	validUrl := "https://example.com"
 	tt := struct {
@@ -296,6 +301,58 @@ func TestGetAllURL_SomethingWentWrong(t *testing.T) {
 	handler := HandleGetAllUrls(mockStore)
 
 	req := httptest.NewRequest("GET", "/dashboard/all", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, tt.expectedCode, w.Code)
+
+	expectedBody, _ := json.Marshal(tt.expectedBody)
+
+	assert.JSONEq(t, string(expectedBody), w.Body.String())
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestDeleteURL_ValidRequest(t *testing.T) {
+	tt := struct {
+		mockSaveError error
+		expectedCode  int
+	}{
+		mockSaveError: nil,
+		expectedCode:  http.StatusNoContent,
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("DeleteURL", context.Background(), "").Return(tt.mockSaveError)
+	handler := HandleDeleteShortenedURL(mockStore)
+
+	req := httptest.NewRequest("DELETE", "/dashboard/123", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, tt.expectedCode, w.Code)
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestDeleteURL_SomethingWentWrong(t *testing.T) {
+	tt := struct {
+		mockSaveError error
+		expectedCode  int
+		expectedBody  utils.ApiResponse
+	}{
+		mockSaveError: assert.AnError,
+		expectedCode:  http.StatusInternalServerError,
+		expectedBody: utils.ApiResponse{
+			Error: "something went wrong",
+		},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("DeleteURL", context.Background(), "").Return(tt.mockSaveError)
+	handler := HandleDeleteShortenedURL(mockStore)
+
+	req := httptest.NewRequest("DELETE", "/dashboard/123", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)

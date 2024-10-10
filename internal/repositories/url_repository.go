@@ -53,3 +53,11 @@ func (s *UrlRepository) GetAllURL(ctx context.Context) (map[string]string, error
 
 	return urls, nil
 }
+
+func (s *UrlRepository) DeleteURL(ctx context.Context, code string) error {
+	if err := s.rdb.HDel(ctx, "encurtador", code).Err(); err != nil {
+		return fmt.Errorf("failed to delete url: %w", err)
+	}
+
+	return nil
+}

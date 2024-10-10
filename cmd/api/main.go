@@ -3,12 +3,11 @@ package main
 import (
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 	"urlShortener/internal/api"
+	"urlShortener/internal/config"
 	"urlShortener/internal/repositories"
 
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -21,22 +20,12 @@ func main() {
 }
 
 func run() error {
-	err := godotenv.Load()
-
-	if err != nil {
-		slog.Error("Error loading .env file")
-		return err
-	}
-
-	redisHost := os.Getenv("REDIS_HOST")
-	redisPort := os.Getenv("REDIS_PORT")
-
-	redisAddr := redisHost + ":" + redisPort
+	redisAddr := config.Config.RedisHost + ":" + config.Config.RedisPort
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
-		Password: "",
-		DB:       0,
+		Password: config.Config.RedisPwd,
+		DB:       config.Config.RedisDb,
 	})
 
 	urlRepository := repositories.NewUrlRepository(rdb)

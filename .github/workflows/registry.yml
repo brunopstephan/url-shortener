@@ -1,10 +1,16 @@
 name: Build and Push Docker Image
 
+# on:
+#   workflow_run:
+#     workflows: ['CI']
+#     types:
+#       - completed
+
+#i made that way because it not a production project, i just made it to learn how to use github actions to push docker images to digital ocean registry
 on:
-  workflow_run:
-    workflows: ['CI']
-    types:
-      - completed
+  push:
+    branches:
+      - branch-that-will-never-exist
 
 jobs:
   build-and-push:

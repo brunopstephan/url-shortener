@@ -21,6 +21,11 @@ func SendJSON(w http.ResponseWriter, resp ApiResponse, status int) {
 	}
 
 	w.WriteHeader(status)
+
+	if status == http.StatusNoContent || (resp.Data == nil && resp.Error == "") {
+		return
+	}
+
 	if _, err := w.Write(data); err != nil {
 		SendJSON(w, ApiResponse{Error: "something went wrong sending json (wrinting response)"}, http.StatusInternalServerError)
 		return

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"urlShortener/internal/config"
 	"urlShortener/internal/handlers"
 	"urlShortener/internal/repositories"
 
@@ -23,11 +24,12 @@ func NewHandler(db repositories.UrlContract) http.Handler {
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.BasicAuth("Restricted", map[string]string{
-			"admin": "password",
+			config.Config.BasicAuthUser: config.Config.BasicAuthPwd,
 		}))
 
-		r.Route("/dashboard", func(r chi.Router) {
+		r.Route("/admin", func(r chi.Router) {
 			r.Get("/all", handlers.HandleGetAllUrls(db))
+			r.Delete("/{code}", handlers.HandleDeleteShortenedURL(db))
 		})
 	})
 	return r

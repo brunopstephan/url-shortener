@@ -107,3 +107,25 @@ func HandleGetAllUrls(db repositories.UrlContract) http.HandlerFunc {
 
 	}
 }
+
+func HandleDeleteShortenedURL(db repositories.UrlContract) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := chi.URLParam(r, "code")
+		if err := db.DeleteURL(r.Context(), code); err != nil {
+			if errors.Is(err, redis.Nil) {
+				utils.SendJSON(w, utils.ApiResponse{
+					Error: "url not found",
+				}, http.StatusNotFound)
+				return
+			}
+
+			slog.Error("error delete url", "error", err)
+			utils.SendJSON(w, utils.ApiResponse{
+				Error: "something went wrong",
+			}, http.StatusInternalServerError)
+			return
+		}
+
+		utils.SendJSON(w, utils.ApiResponse{}, http.StatusNoContent)
+	}
+}
