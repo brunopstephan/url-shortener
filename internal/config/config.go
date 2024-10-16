@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
@@ -16,6 +15,7 @@ type config struct {
 	RedisDb       int
 	BasicAuthUser string
 	BasicAuthPwd  string
+	Port          int
 }
 
 func getConfig() config {
@@ -31,9 +31,13 @@ func getConfig() config {
 	redisPwd := os.Getenv("REDIS_PASSWORD")
 	basicAuthUser := os.Getenv("BASIC_AUTH_USERNAME")
 	basicAuthPwd := os.Getenv("BASIC_AUTH_PASSWORD")
-	fmt.Println(basicAuthUser, basicAuthPwd)
 	redisDb, err := strconv.Atoi(os.Getenv("REDIS_DB"))
+	if err != nil {
+		slog.Error("error converting redis db to int", "error", err)
+		panic(err)
+	}
 
+	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
 		slog.Error("error converting redis db to int", "error", err)
 		panic(err)
@@ -46,6 +50,7 @@ func getConfig() config {
 		RedisDb:       redisDb,
 		BasicAuthUser: basicAuthUser,
 		BasicAuthPwd:  basicAuthPwd,
+		Port:          port,
 	}
 }
 

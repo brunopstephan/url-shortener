@@ -55,9 +55,32 @@ func (s *UrlRepository) GetAllURL(ctx context.Context) (map[string]string, error
 }
 
 func (s *UrlRepository) DeleteURL(ctx context.Context, code string) error {
+	if err := s.rdb.HGet(ctx, "encurtador", code).Err(); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return fmt.Errorf("url not found: %w", err)
+		}
+		return fmt.Errorf("failed to get url: %w", err)
+	}
+
 	if err := s.rdb.HDel(ctx, "encurtador", code).Err(); err != nil {
 		return fmt.Errorf("failed to delete url: %w", err)
 	}
 
 	return nil
+}
+
+func (s *UrlRepository) UpdateURL(ctx context.Context, code string, newURL string) (string, error) {
+
+	if err := s.rdb.HGet(ctx, "encurtador", code).Err(); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return "", fmt.Errorf("url not found: %w", err)
+		}
+		return "", fmt.Errorf("failed to get url: %w", err)
+	}
+
+	if err := s.rdb.HSet(ctx, "encurtador", code, newURL).Err(); err != nil {
+		return "", fmt.Errorf("failed to update url: %w", err)
+	}
+
+	return code, nil
 }

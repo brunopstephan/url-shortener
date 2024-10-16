@@ -111,6 +111,7 @@ func HandleGetAllUrls(db repositories.UrlContract) http.HandlerFunc {
 func HandleDeleteShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")
+
 		if err := db.DeleteURL(r.Context(), code); err != nil {
 			if errors.Is(err, redis.Nil) {
 				utils.SendJSON(w, utils.ApiResponse{
@@ -127,5 +128,48 @@ func HandleDeleteShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 		}
 
 		utils.SendJSON(w, utils.ApiResponse{}, http.StatusNoContent)
+	}
+}
+
+type updateBody struct {
+	NewURL string `json:"new_url"`
+}
+
+func HandleUpdateShortenedURL(db repositories.UrlContract) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := chi.URLParam(r, "code")
+
+		var body updateBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			utils.SendJSON(w, utils.ApiResponse{Error: "invalid request body"}, http.StatusUnprocessableEntity)
+			return
+		}
+
+		if body.NewURL == "" {
+			utils.SendJSON(w, utils.ApiResponse{Error: "New URL is required"}, http.StatusBadRequest)
+			return
+		}
+
+		if _, err := url.Parse(body.NewURL); err != nil {
+			utils.SendJSON(w, utils.ApiResponse{Error: "invalid URL"}, http.StatusBadRequest)
+			return
+		}
+
+		code, err := db.UpdateURL(r.Context(), code, body.NewURL)
+		if err != nil {
+			if errors.Is(err, redis.Nil) {
+				utils.SendJSON(w, utils.ApiResponse{
+					Error: "url not found",
+				}, http.StatusNotFound)
+				return
+			}
+			slog.Error("error saving url", "error", err)
+			utils.SendJSON(w, utils.ApiResponse{
+				Error: "something went wrong",
+			}, http.StatusInternalServerError)
+			return
+		}
+
+		utils.SendJSON(w, utils.ApiResponse{Data: code}, http.StatusCreated)
 	}
 }

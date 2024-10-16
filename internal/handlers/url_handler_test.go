@@ -9,6 +9,7 @@ import (
 	"testing"
 	"urlShortener/internal/utils"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -36,6 +37,11 @@ func (m *MockUrlRepository) GetAllURL(ctx context.Context) (map[string]string, e
 func (m *MockUrlRepository) DeleteURL(ctx context.Context, code string) error {
 	args := m.Called(ctx, code)
 	return args.Error(0)
+}
+
+func (m *MockUrlRepository) UpdateURL(ctx context.Context, code string, newURL string) (string, error) {
+	args := m.Called(ctx, code, newURL)
+	return args.String(0), args.Error(1)
 }
 
 func TestPostShortenedURL_ValidRequest(t *testing.T) {
@@ -133,7 +139,7 @@ func TestPostShortenedURL_InvalidRequest(t *testing.T) {
 	assert.Equal(t, tt.expectedBody, actualResponse)
 }
 
-func TestPostShortenedURL_DatabaseError(t *testing.T) {
+func TestPostShortenedURL_SomethindWentWrong(t *testing.T) {
 	tt := struct {
 		body         postBody
 		expectedCode int
@@ -272,7 +278,7 @@ func TestGetAllURL_ValidRequest(t *testing.T) {
 	mockStore.On("GetAllURL", context.Background()).Return(tt.mockSaveReturn, tt.mockSaveError)
 	handler := HandleGetAllUrls(mockStore)
 
-	req := httptest.NewRequest("GET", "/dashboard/all", nil)
+	req := httptest.NewRequest("GET", "/admin/all", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -300,7 +306,7 @@ func TestGetAllURL_SomethingWentWrong(t *testing.T) {
 	mockStore.On("GetAllURL", context.Background()).Return(map[string]string{}, assert.AnError)
 	handler := HandleGetAllUrls(mockStore)
 
-	req := httptest.NewRequest("GET", "/dashboard/all", nil)
+	req := httptest.NewRequest("GET", "/admin/all", nil)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -323,15 +329,57 @@ func TestDeleteURL_ValidRequest(t *testing.T) {
 		expectedCode:  http.StatusNoContent,
 	}
 	mockStore := new(MockUrlRepository)
-	mockStore.On("DeleteURL", context.Background(), "").Return(tt.mockSaveError)
+	mockStore.On("DeleteURL", mock.Anything, "321").Return(tt.mockSaveError)
 	handler := HandleDeleteShortenedURL(mockStore)
 
-	req := httptest.NewRequest("DELETE", "/dashboard/123", nil)
-	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodDelete, "/admin/321", nil)
+	assert.NoError(t, err)
 
-	handler.ServeHTTP(w, req)
+	rr := httptest.NewRecorder()
 
-	assert.Equal(t, tt.expectedCode, w.Code)
+	router := chi.NewRouter()
+	router.Delete("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestDeleteURL_URLNotFound(t *testing.T) {
+	tt := struct {
+		mockSaveError error
+		expectedCode  int
+		expectedBody  utils.ApiResponse
+	}{
+		mockSaveError: redis.Nil,
+		expectedCode:  http.StatusNotFound,
+		expectedBody: utils.ApiResponse{
+			Error: "url not found",
+		},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("DeleteURL", mock.Anything, "321").Return(tt.mockSaveError)
+	handler := HandleDeleteShortenedURL(mockStore)
+
+	req, err := http.NewRequest(http.MethodDelete, "/admin/321", nil)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Delete("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	expectedBody, _ := json.Marshal(tt.expectedBody)
+
+	assert.JSONEq(t, string(expectedBody), rr.Body.String())
 
 	mockStore.AssertExpectations(t)
 }
@@ -349,19 +397,230 @@ func TestDeleteURL_SomethingWentWrong(t *testing.T) {
 		},
 	}
 	mockStore := new(MockUrlRepository)
-	mockStore.On("DeleteURL", context.Background(), "").Return(tt.mockSaveError)
+	mockStore.On("DeleteURL", mock.Anything, "321").Return(tt.mockSaveError)
 	handler := HandleDeleteShortenedURL(mockStore)
 
-	req := httptest.NewRequest("DELETE", "/dashboard/123", nil)
-	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodDelete, "/admin/321", nil)
+	assert.NoError(t, err)
 
-	handler.ServeHTTP(w, req)
+	rr := httptest.NewRecorder()
 
-	assert.Equal(t, tt.expectedCode, w.Code)
+	router := chi.NewRouter()
+	router.Delete("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
 
 	expectedBody, _ := json.Marshal(tt.expectedBody)
 
-	assert.JSONEq(t, string(expectedBody), w.Body.String())
+	assert.JSONEq(t, string(expectedBody), rr.Body.String())
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestUpdateShortenedURL_ValidRequest(t *testing.T) {
+	validUrl := "https://example.com"
+	tt := struct {
+		body           updateBody
+		mockSaveReturn string
+		mockSaveError  error
+		expectedCode   int
+		expectedBody   utils.ApiResponse
+	}{
+		body:           updateBody{NewURL: validUrl},
+		mockSaveReturn: "123",
+		mockSaveError:  nil,
+		expectedCode:   http.StatusCreated,
+		expectedBody:   utils.ApiResponse{Data: "123"},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("UpdateURL", mock.Anything, "123", tt.body.NewURL).Return(tt.mockSaveReturn, tt.mockSaveError)
+	handler := HandleUpdateShortenedURL(mockStore)
+
+	var requestBody bytes.Buffer
+	json.NewEncoder(&requestBody).Encode(tt.body)
+
+	req, err := http.NewRequest(http.MethodPut, "/admin/123", &requestBody)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Put("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	var actualResponse utils.ApiResponse
+	json.Unmarshal(rr.Body.Bytes(), &actualResponse)
+	assert.Equal(t, tt.expectedBody, actualResponse)
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestUpdateShortenedURL_InvalidRequest(t *testing.T) {
+	tt := struct {
+		body         string
+		expectedCode int
+		expectedBody utils.ApiResponse
+	}{
+		body:         "",
+		expectedCode: http.StatusUnprocessableEntity,
+		expectedBody: utils.ApiResponse{Error: "invalid request body"},
+	}
+
+	mockStore := new(MockUrlRepository)
+	handler := HandleUpdateShortenedURL(mockStore)
+
+	var requestBody bytes.Buffer
+	json.NewEncoder(&requestBody).Encode(tt.body)
+
+	req, err := http.NewRequest(http.MethodPut, "/admin/123", &requestBody)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Put("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	var actualResponse utils.ApiResponse
+	json.Unmarshal(rr.Body.Bytes(), &actualResponse)
+	assert.Equal(t, tt.expectedBody, actualResponse)
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestUpdateShortenedURL_MissingParams(t *testing.T) {
+	tt := struct {
+		name         string
+		body         updateBody
+		expectedCode int
+		expectedBody utils.ApiResponse
+	}{
+		body:         updateBody{},
+		expectedCode: http.StatusBadRequest,
+		expectedBody: utils.ApiResponse{Error: "New URL is required"},
+	}
+
+	mockStore := new(MockUrlRepository)
+	handler := HandleUpdateShortenedURL(mockStore)
+
+	var requestBody bytes.Buffer
+	json.NewEncoder(&requestBody).Encode(tt.body)
+
+	req, err := http.NewRequest(http.MethodPut, "/admin/123", &requestBody)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Put("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	var actualResponse utils.ApiResponse
+	json.Unmarshal(rr.Body.Bytes(), &actualResponse)
+	assert.Equal(t, tt.expectedBody, actualResponse)
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestUpdateShortenedURL_URLNotFound(t *testing.T) {
+	validUrl := "https://example.com"
+	tt := struct {
+		body           updateBody
+		mockSaveReturn string
+		mockSaveError  error
+		expectedCode   int
+		expectedBody   utils.ApiResponse
+	}{
+		body:           updateBody{NewURL: validUrl},
+		mockSaveReturn: "123",
+		mockSaveError:  redis.Nil,
+		expectedCode:   http.StatusNotFound,
+		expectedBody: utils.ApiResponse{
+			Error: "url not found",
+		},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("UpdateURL", mock.Anything, "123", tt.body.NewURL).Return(tt.mockSaveReturn, tt.mockSaveError)
+	handler := HandleUpdateShortenedURL(mockStore)
+
+	var requestBody bytes.Buffer
+	json.NewEncoder(&requestBody).Encode(tt.body)
+
+	req, err := http.NewRequest(http.MethodPut, "/admin/123", &requestBody)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Put("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	var actualResponse utils.ApiResponse
+	json.Unmarshal(rr.Body.Bytes(), &actualResponse)
+	assert.Equal(t, tt.expectedBody, actualResponse)
+
+	mockStore.AssertExpectations(t)
+}
+
+func TestUpdateShortenedURL_SomethingWentWrong(t *testing.T) {
+	validUrl := "https://example.com"
+	tt := struct {
+		body           updateBody
+		mockSaveReturn string
+		mockSaveError  error
+		expectedCode   int
+		expectedBody   utils.ApiResponse
+	}{
+		body:           updateBody{NewURL: validUrl},
+		mockSaveReturn: "123",
+		mockSaveError:  assert.AnError,
+		expectedCode:   http.StatusInternalServerError,
+		expectedBody: utils.ApiResponse{
+			Error: "something went wrong",
+		},
+	}
+	mockStore := new(MockUrlRepository)
+	mockStore.On("UpdateURL", mock.Anything, "123", tt.body.NewURL).Return(tt.mockSaveReturn, tt.mockSaveError)
+	handler := HandleUpdateShortenedURL(mockStore)
+
+	var requestBody bytes.Buffer
+	json.NewEncoder(&requestBody).Encode(tt.body)
+
+	req, err := http.NewRequest(http.MethodPut, "/admin/123", &requestBody)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Put("/admin/{code}", handler.ServeHTTP)
+
+	// Serve the HTTP request
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, tt.expectedCode, rr.Code)
+
+	var actualResponse utils.ApiResponse
+	json.Unmarshal(rr.Body.Bytes(), &actualResponse)
+	assert.Equal(t, tt.expectedBody, actualResponse)
 
 	mockStore.AssertExpectations(t)
 }

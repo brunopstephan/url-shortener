@@ -30,6 +30,7 @@ func NewHandler(db repositories.UrlContract) http.Handler {
 		r.Route("/admin", func(r chi.Router) {
 			r.Get("/all", handlers.HandleGetAllUrls(db))
 			r.Delete("/{code}", handlers.HandleDeleteShortenedURL(db))
+			r.Put("/{code}", handlers.HandleUpdateShortenedURL(db))
 		})
 	})
 	return r

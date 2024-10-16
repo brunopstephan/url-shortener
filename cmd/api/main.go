@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 	"urlShortener/internal/api"
 	"urlShortener/internal/config"
@@ -34,10 +36,11 @@ func run() error {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Minute,
-		Addr:         ":9000",
+		Addr:         ":" + strconv.Itoa(config.Config.Port),
 		Handler:      handler,
 	}
 
+	slog.Info(fmt.Sprintf("Server started on port %d", config.Config.Port))
 	if err := s.ListenAndServe(); err != nil {
 		return err
 	}
