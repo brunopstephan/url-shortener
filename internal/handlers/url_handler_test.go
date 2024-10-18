@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"urlShortener/internal/utils"
+	"url-shortener/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"

@@ -6,12 +6,19 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"urlShortener/internal/api"
-	"urlShortener/internal/config"
-	"urlShortener/internal/repositories"
+	"url-shortener/internal/api"
+	"url-shortener/internal/config"
+	"url-shortener/internal/repositories"
 
 	"github.com/redis/go-redis/v9"
 )
+
+// @title URL Shortener API
+// @version 1.0
+// @description A simple url shortener.
+
+// @contact.name Bruno Piffer Stephan
+// @contact.email brunopstephan@gmail.com
 
 func main() {
 	if err := run(); err != nil {

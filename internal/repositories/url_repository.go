@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"urlShortener/internal/utils"
+	"url-shortener/internal/utils"
 
 	"github.com/redis/go-redis/v9"
 )

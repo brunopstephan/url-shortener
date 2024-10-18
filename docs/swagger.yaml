@@ -1,0 +1,65 @@
+definitions:
+  handlers.getShortenedURLResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  utils.ApiResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+    type: object
+info:
+  contact:
+    email: brunopstephan@gmail.com
+    name: Bruno Piffer Stephan
+  description: A simple url shortener.
+  title: URL Shortener API
+  version: "1.0"
+paths:
+  /urls/{code}:
+    get:
+      description: Get the original URL from the shortened code
+      parameters:
+      - description: Shortened URL code
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Return JSON response
+        in: query
+        name: json
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.getShortenedURLResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+      summary: Get shortened URL
+      tags:
+      - URL
+swagger: "2.0"

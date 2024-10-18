@@ -2,12 +2,16 @@ package api
 
 import (
 	"net/http"
-	"urlShortener/internal/config"
-	"urlShortener/internal/handlers"
-	"urlShortener/internal/repositories"
+	"strconv"
+	"url-shortener/internal/config"
+	"url-shortener/internal/handlers"
+	"url-shortener/internal/repositories"
+
+	_ "url-shortener/docs"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func NewHandler(db repositories.UrlContract) http.Handler {
@@ -16,6 +20,13 @@ func NewHandler(db repositories.UrlContract) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(middleware.RequestID)
+
+	port := config.Config.Port
+	_url := "http://localhost:" + strconv.Itoa(port) + "/swagger/doc.json"
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL(_url), //The url pointing to API definition
+	))
 
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/shorten", handlers.HandlePostShortenedURL(db))

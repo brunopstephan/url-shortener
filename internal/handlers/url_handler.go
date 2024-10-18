@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"urlShortener/internal/repositories"
-	"urlShortener/internal/utils"
+	"url-shortener/internal/repositories"
+	"url-shortener/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
@@ -17,6 +17,16 @@ type getShortenedURLResponse struct {
 	URL string `json:"url"`
 }
 
+// HandleGetShortenedURL godoc
+// @Summary Get shortened URL
+// @Description Get the original URL from the shortened code
+// @Tags URL
+// @Param code path string true "Shortened URL code"
+// @Param json query string false "Return JSON response"
+// @Success 200 {object} utils.ApiResponse{data=getShortenedURLResponse}
+// @Failure 404 {object} utils.ApiResponse{error=string}
+// @Failure 500 {object} utils.ApiResponse{error=string}
+// @Router /api/{code} [get]
 func HandleGetShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")
