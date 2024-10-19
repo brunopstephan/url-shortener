@@ -20,7 +20,7 @@ type getShortenedURLResponse struct {
 // HandleGetShortenedURL godoc
 // @Summary Get shortened URL
 // @Description Get the original URL from the shortened code
-// @Tags URL
+// @Tags API
 // @Param code path string true "Shortened URL code"
 // @Param json query string false "Return JSON response"
 // @Success 200 {object} utils.ApiResponse{data=getShortenedURLResponse}
@@ -64,6 +64,16 @@ type postBody struct {
 	URL string `json:"url"`
 }
 
+// HandlePostShortenedURL godoc
+// @Summary Post shortened URL
+// @Description Get the original URL from the shortened code
+// @Tags API
+// @Param data body postBody true "Shortened URL Post Body"
+// @Success 201 {object} utils.ApiResponse{data=string}
+// @Failure 400 {object} utils.ApiResponse{error=string}
+// @Failure 500 {object} utils.ApiResponse{error=string}
+// @Failure 422 {object} utils.ApiResponse{error=string}
+// @Router /api/shorten [post]
 func HandlePostShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body postBody
@@ -100,6 +110,16 @@ type getAllUrlsResponse struct {
 	URLs map[string]string `json:"urls"`
 }
 
+// HandleGetAllUrls godoc
+// @Summary Get all shortened URL
+// @Description Get all shortened URLs and respective codes
+// @Security BasicAuth
+// @Tags ADMIN
+// @Param Authorization header string true "Basic Auth"
+// @Success 200 {object} utils.ApiResponse{data=getAllUrlsResponse}
+// @Failure 500 {object} utils.ApiResponse{error=string}
+// @Failure 401
+// @Router /admin/all [get]
 func HandleGetAllUrls(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		urls, err := db.GetAllURL(r.Context())
@@ -118,6 +138,18 @@ func HandleGetAllUrls(db repositories.UrlContract) http.HandlerFunc {
 	}
 }
 
+// HandleDeleteShortenedURL godoc
+// @Summary Delete shortened URL
+// @Description Delete shortened URL that match the code passed
+// @Security BasicAuth
+// @Tags ADMIN
+// @Param Authorization header string true "Basic Auth"
+// @Param code path string true "Shortened URL code"
+// @Success 204 {object} utils.ApiResponse{}
+// @Failure 500 {object} utils.ApiResponse{error=string}
+// @Failure 404 {object} utils.ApiResponse{error=string}
+// @Failure 401
+// @Router /admin/{code} [delete]
 func HandleDeleteShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")
@@ -145,6 +177,21 @@ type updateBody struct {
 	NewURL string `json:"new_url"`
 }
 
+// HandleUpdateShortenedURL godoc
+// @Summary Update shortened URL
+// @Description Update shortened URL that match the code passed
+// @Security BasicAuth
+// @Tags ADMIN
+// @Param Authorization header string true "Basic Auth"
+// @Param code path string true "Shortened URL code"
+// @Param data body updateBody true "Shortened URL Update Body"
+// @Success 201 {object} utils.ApiResponse{data=string}
+// @Failure 500 {object} utils.ApiResponse{error=string}
+// @Failure 404 {object} utils.ApiResponse{error=string}
+// @Failure 422 {object} utils.ApiResponse{error=string}
+// @Failure 400 {object} utils.ApiResponse{error=string}
+// @Failure 401
+// @Router /admin/{code} [put]
 func HandleUpdateShortenedURL(db repositories.UrlContract) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")

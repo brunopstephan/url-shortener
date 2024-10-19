@@ -1,7 +1,24 @@
 definitions:
+  handlers.getAllUrlsResponse:
+    properties:
+      urls:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   handlers.getShortenedURLResponse:
     properties:
       url:
+        type: string
+    type: object
+  handlers.postBody:
+    properties:
+      url:
+        type: string
+    type: object
+  handlers.updateBody:
+    properties:
+      new_url:
         type: string
     type: object
   utils.ApiResponse:
@@ -18,7 +35,158 @@ info:
   title: URL Shortener API
   version: "1.0"
 paths:
-  /urls/{code}:
+  /admin/{code}:
+    delete:
+      description: Delete shortened URL that match the code passed
+      parameters:
+      - description: Basic Auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shortened URL code
+        in: path
+        name: code
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/utils.ApiResponse'
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - BasicAuth: []
+      summary: Delete shortened URL
+      tags:
+      - ADMIN
+    put:
+      description: Update shortened URL that match the code passed
+      parameters:
+      - description: Basic Auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shortened URL code
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Shortened URL Update Body
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateBody'
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - BasicAuth: []
+      summary: Update shortened URL
+      tags:
+      - ADMIN
+  /admin/all:
+    get:
+      description: Get all shortened URLs and respective codes
+      parameters:
+      - description: Basic Auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.getAllUrlsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+      security:
+      - BasicAuth: []
+      summary: Get all shortened URL
+      tags:
+      - ADMIN
+  /api/{code}:
     get:
       description: Get the original URL from the shortened code
       parameters:
@@ -61,5 +229,55 @@ paths:
               type: object
       summary: Get shortened URL
       tags:
-      - URL
+      - API
+  /api/shorten:
+    post:
+      description: Get the original URL from the shortened code
+      parameters:
+      - description: Shortened URL Post Body
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.postBody'
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ApiResponse'
+            - properties:
+                error:
+                  type: string
+              type: object
+      summary: Post shortened URL
+      tags:
+      - API
 swagger: "2.0"
