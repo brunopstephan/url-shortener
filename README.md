@@ -30,7 +30,7 @@ If everthing goes well, you will be able to make requests at `http://localhost:9
 
 ### Endpoints
 
-You can access it in the [Swagger UI](http://localhost:9000), or see the list below
+You can access it in the [Swagger UI](http://localhost:9000/swagger/index.html), or see the list below
 
 #### Public:
 - `GET /api/{code}` - redirect to the code's url (`json=true` query param will bring the url data in JSON format);
