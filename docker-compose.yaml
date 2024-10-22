@@ -13,14 +13,14 @@ services:
     <<: *app_base
     container_name: app1
     environment:
-      - PORT=9001
+      - APP_PORT=8081
       - REDIS_HOST=redis
 
   app2:
     <<: *app_base
     container_name: app2
     environment:
-      - PORT=9002
+      - APP_PORT=8082
       - REDIS_HOST=redis
       
   redis:
@@ -31,8 +31,10 @@ services:
 
   nginx:
     image: nginx:latest
+    env_file:
+      - .env
     ports:
-      - "9000:9000"
+      - "${PORT}:80"
     depends_on:
       - app1
       - app2

@@ -15,6 +15,7 @@ type config struct {
 	RedisDb       int
 	BasicAuthUser string
 	BasicAuthPwd  string
+	AppPort       int
 	Port          int
 }
 
@@ -37,6 +38,12 @@ func getConfig() config {
 		panic(err)
 	}
 
+	appPort, err := strconv.Atoi(os.Getenv("APP_PORT"))
+	if err != nil {
+		slog.Error("error converting redis db to int", "error", err)
+		panic(err)
+	}
+
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
 		slog.Error("error converting redis db to int", "error", err)
@@ -50,6 +57,7 @@ func getConfig() config {
 		RedisDb:       redisDb,
 		BasicAuthUser: basicAuthUser,
 		BasicAuthPwd:  basicAuthPwd,
+		AppPort:       appPort,
 		Port:          port,
 	}
 }

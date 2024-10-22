@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"url-shortener/internal/config"
@@ -23,6 +24,7 @@ func NewHandler(db repositories.UrlContract) http.Handler {
 
 	port := config.Config.Port
 	_url := "http://localhost:" + strconv.Itoa(port) + "/swagger/doc.json"
+	fmt.Println("Swagger UI is available at " + _url)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL(_url), //The url pointing to API definition

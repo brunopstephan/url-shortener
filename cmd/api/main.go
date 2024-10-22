@@ -43,11 +43,11 @@ func run() error {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  time.Minute,
-		Addr:         ":" + strconv.Itoa(config.Config.Port),
+		Addr:         ":" + strconv.Itoa(config.Config.AppPort),
 		Handler:      handler,
 	}
 
-	slog.Info(fmt.Sprintf("Server started on port %d", config.Config.Port))
+	slog.Info(fmt.Sprintf("Server started on port %d", config.Config.AppPort))
 	if err := s.ListenAndServe(); err != nil {
 		return err
 	}
